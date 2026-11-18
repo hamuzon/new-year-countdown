@@ -1,3 +1,4 @@
+
 # Simple workflow for deploying static content to GitHub Pages
 name: Deploy static content to Pages
 
@@ -15,66 +16,172 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want these production deployments to complete.
+# Allow only one concurrent deployment
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
+
     env:
       GA_MEASUREMENT_ID: G-F8HVYVW05H
+
     steps:
+      # Checkout repository
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: 'main'
+          ref: main
 
+      # Setup GitHub Pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Inject Google Analytics 4
       - name: Inject Google Analytics 4
+        shell: bash
         run: |
-          # google*.html を除外し、既存GA4タグがないHTMLに挿入
-          find . -type f -name "*.html" -not -name "google*.html" \
-            -exec sh -c '
-              for file do
-                if ! grep -q "googletagmanager.com/gtag/js" "$file"; then
-                  sed -i "/<head[^>]*>/a\\
-          <!-- Google tag (gtag.js) -->\\
-          <script async src=\"https://www.googletagmanager.com/gtag/js?id=$GA_MEASUREMENT_ID\"></script>\\
-          <script>\\
-          window.dataLayer = window.dataLayer || [];\\
-          function gtag(){dataLayer.push(arguments);}\\
-          gtag(\"js\", new Date());\\
-          gtag(\"config\", \"$GA_MEASUREMENT_ID\");\\
-          </script>" "$file"
-                fi
-              done
-            ' sh {} +
+          find . -type f -name "*.html" \
+            ! -name "google*.html" \
+            ! -path "./.git/*" \
+            -print0 |
+          while IFS= read -r -d '' file; do
 
+            if grep -q "googletagmanager.com/gtag/js" "$file"; then
+              echo "GA4 already exists: $file"
+              continue
+            fi
+
+            if ! grep -qiE '<head[^>]*>' "$file"; then
+              echo "No head tag found: $file"
+              continue
+            fi
+
+            GA_SCRIPT=$(cat <<EOF
+          <!-- Google tag (gtag.js) -->
+          <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
+          <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag("js", new Date());
+          gtag("config", "${GA_MEASUREMENT_ID}");
+          </script>
+          EOF
+          )
+
+            export GA_SCRIPT
+
+            python3 - "$file" <<'PY'
+          import os
+          import re
+          import sys
+
+          path = sys.argv[1]
+
+          with open(path, "r", encoding="utf-8") as f:
+              content = f.read()
+
+          script = os.environ["GA_SCRIPT"]
+
+          content = re.sub(
+              r"(<head\b[^>]*>)",
+              lambda m: m.group(1) + "\n" + script,
+              content,
+              count=1,
+              flags=re.IGNORECASE
+          )
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+          PY
+
+            echo "GA4 injected: $file"
+          done
+
+      # Inject FQDN normalization script
       - name: Inject FQDN normalization script
+        shell: bash
         run: |
-          # 全てのHTMLファイルの<head>直後に挿入
-          find . -type f -name "*.html" -not -name "google*.html" -exec sed -i '/<head[^>]*>/a \  <script>if(window.location.hostname.endsWith(".")){window.location.replace(window.location.href.replace(window.location.hostname,window.location.hostname.slice(0,-1)));}</script>' {} +
+          find . -type f -name "*.html" \
+            ! -name "google*.html" \
+            ! -path "./.git/*" \
+            -print0 |
+          while IFS= read -r -d '' file; do
 
+            if grep -q 'fqdn-normalization' "$file"; then
+              echo "FQDN normalization already exists: $file"
+              continue
+            fi
+
+            if ! grep -qiE '<head[^>]*>' "$file"; then
+              echo "No head tag found: $file"
+              continue
+            fi
+
+            python3 - "$file" <<'PY'
+          import re
+          import sys
+
+          path = sys.argv[1]
+
+          script = """<!-- fqdn-normalization -->
+          <script>
+          (() => {
+            const hostname = window.location.hostname;
+            if (hostname.endsWith(".")) {
+              const url = new URL(window.location.href);
+              url.hostname = hostname.slice(0, -1);
+              window.location.replace(url.toString());
+            }
+          })();
+          </script>"""
+
+          with open(path, "r", encoding="utf-8") as f:
+              content = f.read()
+
+          content = re.sub(
+              r"(<head\b[^>]*>)",
+              lambda m: m.group(1) + "\n" + script,
+              content,
+              count=1,
+              flags=re.IGNORECASE
+          )
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+          PY
+
+            echo "FQDN normalization injected: $file"
+          done
+
+      # Remove sensitive and unnecessary files
       - name: Remove sensitive files from deployment artifact
+        shell: bash
         run: |
-          # デプロイ対象から削除
-          rm -rf functions README.md README readme.md license LICENSE LICENSE.txt _redirects.md _redirects
+          rm -rf \
+            functions \
+            README.md \
+            README \
+            readme.md \
+            license \
+            LICENSE \
+            LICENSE.txt \
+            _redirects.md \
+            _redirects
 
+      # Upload artifact
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          path: "."
 
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
