@@ -45,7 +45,20 @@ const browserTz = (() => {
 })();
 
 const urlParams = new URLSearchParams(location.search);
-const currentTz = urlParams.get('tz') || browserTz;
+
+function isSupportedTimeZone(tz) {
+    if (!tz) return false;
+
+    try {
+        new Intl.DateTimeFormat('en-US', { timeZone: tz });
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+const requestedTz = urlParams.get('tz');
+const currentTz = isSupportedTimeZone(requestedTz) ? requestedTz : browserTz;
 const currentYear = Number(new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     timeZone: currentTz

@@ -47,13 +47,13 @@
             const utcOffset = gmt.replace('GMT', 'UTC');
 
             let minutes = 0;
-            const match = gmt.match(/GMT([+-])(\d{2}):(\d{2})/);
+            const match = gmt.match(/(?:GMT|UTC)([+-])(\d{1,2})(?::(\d{2}))?/);
 
             if (match) {
                 const sign = match[1] === '-' ? -1 : 1;
                 minutes = sign * (
                     parseInt(match[2], 10) * 60 +
-                    parseInt(match[3], 10)
+                    parseInt(match[3] || '0', 10)
                 );
             }
 
@@ -236,27 +236,108 @@
 
         const encTz = encodeURIComponent(currentTz || 'UTC');
 
+        function toMs(value) {
+            if (typeof value !== 'number' || !isFinite(value)) return null;
+
+            // 1e11 separates seconds (~1.7e9) from milliseconds (~1.7e12).
+            return value > 1e11 ? value : value * 1000;
+        }
+
+        // "2026-11-18T06:54:25.938" style strings have no offset info, so they
+        // must be interpreted as wall clock time in `tz`.
+        function parseWallClock(str, tz) {
+            const m = String(str).trim().match(
+                /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?$/
+            );
+
+            if (!m) return null;
+
+            return wallClockToUtcMs({
+                year: parseInt(m[1], 10),
+                month: parseInt(m[2], 10),
+                day: parseInt(m[3], 10),
+                hour: parseInt(m[4], 10),
+                minute: parseInt(m[5], 10),
+                second: m[6] ? parseInt(m[6], 10) : 0,
+                millisecond: m[7]
+                    ? parseInt((m[7] + '00').slice(0, 3), 10)
+                    : 0
+            }, tz || currentTz);
+        }
+
         function parseData(d) {
-            if (!d) return null;
+            if (d === null || d === undefined) return null;
 
-            if (typeof d.unix_ms === 'number') {
-                return d.unix_ms;
+            if (typeof d === 'number') return toMs(d);
+
+            if (typeof d === 'string') {
+                const trimmed = d.trim();
+
+                if (trimmed === '') return null;
+
+                const num = Number(trimmed);
+
+                if (isFinite(num)) return toMs(num);
+
+                // A date-time without an offset must not be parsed with
+                // Date.parse(), because that would use the browser timezone.
+                const wall = parseWallClock(trimmed, currentTz);
+
+                if (wall !== null) return wall;
+
+                const parsed = Date.parse(trimmed);
+
+                return isNaN(parsed) ? null : parsed;
             }
 
-            if (typeof d.unixtime === 'number') {
-                return d.unixtime * 1000;
+            if (typeof d !== 'object') return null;
+
+            const direct = toMs(d.unix_ms) ?? toMs(d.unixMs) ?? toMs(d.unixtime);
+
+            if (direct !== null) return direct;
+
+            const timestamp = toMs(d.timestamp);
+
+            if (timestamp !== null) return timestamp;
+
+            if (typeof d.iso === 'string') {
+                const parsed = Date.parse(d.iso);
+
+                if (!isNaN(parsed)) return parsed;
             }
 
-            if (typeof d.timestamp === 'number') {
-                return d.timestamp * 1000;
+            if (typeof d.utc_datetime === 'string') {
+                const parsed = Date.parse(d.utc_datetime);
+
+                if (!isNaN(parsed)) return parsed;
             }
 
-            if (d.utc_datetime) {
-                return Date.parse(d.utc_datetime);
+            const tz = typeof d.timeZone === 'string' ? d.timeZone : currentTz;
+
+            if (typeof d.dateTime === 'string') {
+                const wall = parseWallClock(d.dateTime, tz);
+
+                if (wall !== null) return wall;
             }
 
-            if (d.dateTime) {
-                return Date.parse(String(d.dateTime).trim());
+            if (
+                typeof d.year === 'number' &&
+                typeof d.month === 'number' &&
+                typeof d.day === 'number'
+            ) {
+                return wallClockToUtcMs({
+                    year: d.year,
+                    month: d.month,
+                    day: d.day,
+                    hour: typeof d.hour === 'number' ? d.hour : 0,
+                    minute: typeof d.minute === 'number' ? d.minute : 0,
+                    second: typeof d.seconds === 'number'
+                        ? d.seconds
+                        : (typeof d.second === 'number' ? d.second : 0),
+                    millisecond: typeof d.milliSeconds === 'number'
+                        ? d.milliSeconds
+                        : (typeof d.milliseconds === 'number' ? d.milliseconds : 0)
+                }, tz);
             }
 
             return null;
@@ -317,19 +398,39 @@
         return new Date(Date.now() + timeOffset);
     }
 
-    const tzFormatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: currentTz,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hourCycle: 'h23'
-    });
+    const tzFormatterCache = new Map();
 
-    function getTzParts(date) {
-        const parts = tzFormatter.formatToParts(date);
+    function getTzFormatter(tz) {
+        let formatter = tzFormatterCache.get(tz);
+
+        if (!formatter) {
+            formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: tz,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hourCycle: 'h23'
+            });
+
+            tzFormatterCache.set(tz, formatter);
+        }
+
+        return formatter;
+    }
+
+    function getPartsInZone(date, tz) {
+        let parts;
+
+        try {
+            parts = getTzFormatter(tz).formatToParts(date);
+        } catch(e) {
+            if (tz === 'UTC') throw e;
+
+            return getPartsInZone(date, 'UTC');
+        }
 
         const g = type => {
             const item = parts.find(p => p.type === type);
@@ -346,23 +447,70 @@
         };
     }
 
-    function getNewYearUtcMs(year) {
-        const guessUtc = Date.UTC(year, 0, 1, 0, 0, 0);
+    function getTzParts(date) {
+        return getPartsInZone(date, currentTz);
+    }
 
-        const p = getTzParts(new Date(guessUtc));
+    // Offset (ms) of `tz` at the given UTC timestamp.
+    function getOffsetMsAt(utcMs, tz) {
+        const wholeSeconds = Math.floor(utcMs / 1000) * 1000;
+        const p = getPartsInZone(new Date(wholeSeconds), tz);
 
-        const localAsUtc = Date.UTC(
+        return Date.UTC(
             p.year,
             p.month - 1,
             p.day,
             p.hour,
             p.minute,
             p.second
+        ) - wholeSeconds;
+    }
+
+    // UTC timestamp of a wall clock time in `tz`. The offset is looked up
+    // twice so that DST boundaries are handled correctly.
+    function wallClockToUtcMs(p, tz) {
+        const guess = Date.UTC(
+            p.year,
+            p.month - 1,
+            p.day,
+            p.hour,
+            p.minute,
+            p.second,
+            p.millisecond || 0
         );
 
-        const offsetMs = localAsUtc - guessUtc;
+        const offset = getOffsetMsAt(guess, tz);
+        let result = guess - offset;
 
-        return guessUtc - offsetMs;
+        const resultOffset = getOffsetMsAt(result, tz);
+
+        if (resultOffset !== offset) {
+            result = guess - resultOffset;
+        }
+
+        return result;
+    }
+
+    let cachedNewYearYear = null;
+    let cachedNewYearMs = 0;
+
+    function getNewYearUtcMs(year) {
+        if (cachedNewYearYear === year) return cachedNewYearMs;
+
+        const ms = wallClockToUtcMs({
+            year: year,
+            month: 1,
+            day: 1,
+            hour: 0,
+            minute: 0,
+            second: 0,
+            millisecond: 0
+        }, currentTz);
+
+        cachedNewYearYear = year;
+        cachedNewYearMs = ms;
+
+        return ms;
     }
 
     function updateCountdown() {
