@@ -7,8 +7,8 @@ on:
   push:
     branches: ["main"]
     paths-ignore:
-      - 'sitemap.xml'
-      - 'public/**'
+      - "sitemap.xml"
+      - "public/**"
 
   # Also run when the sitemap update workflow completes
   workflow_run:
@@ -25,21 +25,24 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment and do not cancel in-progress deployments
+# Allow only one concurrent deployment
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  # Single job for deploying the site
   deploy:
-    # Run on pushes or when the Update Sitemap workflow succeeds
+    # Run on pushes, manual execution, or successful sitemap updates
     if: >
       github.event_name == 'push' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success')
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
 
     steps:
@@ -48,17 +51,20 @@ jobs:
         with:
           ref: main
 
+      # Enable GitHub Pages if necessary
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
+      # Inject FQDN normalization script
       - name: Inject FQDN normalization script
         shell: bash
         run: |
-          # Inject the hostname normalization script after the opening head tag in all HTML files
           find . -type f -name "*.html" ! -name "google*.html" -print0 |
           while IFS= read -r -d '' file; do
             if grep -q 'hostname.endsWith' "$file"; then
-              echo "FQDN normalization script already exists: $file"
+              echo "Already exists: $file"
               continue
             fi
 
@@ -68,14 +74,14 @@ jobs:
             echo "Updated: $file"
           done
 
+      # Inject Google Analytics
       - name: Inject Google Analytics
         shell: bash
         run: |
-          # Inject Google Analytics after the opening head tag in all HTML files
           find . -type f -name "*.html" ! -name "google*.html" -print0 |
           while IFS= read -r -d '' file; do
             if grep -q 'G-F8HVYVW05H' "$file"; then
-              echo "Google Analytics already exists: $file"
+              echo "Already exists: $file"
               continue
             fi
 
@@ -91,18 +97,28 @@ jobs:
             echo "Updated: $file"
           done
 
+      # Remove sensitive and unnecessary files
       - name: Remove sensitive files from deployment artifact
         shell: bash
         run: |
-          # Remove files and directories from the deployment artifact
-          rm -rf functions README.md README readme.md license LICENSE LICENSE.txt _redirects.md _redirects
+          rm -rf \
+            functions \
+            README.md \
+            README \
+            readme.md \
+            license \
+            LICENSE \
+            LICENSE.txt \
+            _redirects.md \
+            _redirects
 
+      # Upload artifact
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the entire repository
-          path: '.'
+          path: "."
 
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
