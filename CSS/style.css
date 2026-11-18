@@ -1,0 +1,476 @@
+html {
+        background: #0a0a0a;
+    }
+
+    html.light {
+        background: #fde2ea;
+    }
+
+    html.dark {
+        background: #0a0a0a;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Noto Sans JP', Arial, sans-serif;
+    }
+
+    body {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        line-height: 1.4;
+        overflow-x: hidden;
+        font-weight: 500;
+        transition: background-color 0.3s, color 0.3s;
+        font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+        background-attachment: fixed;
+    }
+
+    .light body {
+        background:
+            radial-gradient(ellipse 80% 60% at 70% 20%, rgba(175,109,255,.85), transparent 68%),
+            radial-gradient(ellipse 70% 60% at 20% 80%, rgba(255,100,180,.75), transparent 68%),
+            radial-gradient(ellipse 60% 50% at 60% 65%, rgba(255,235,170,.98), transparent 68%),
+            radial-gradient(ellipse 65% 40% at 50% 60%, rgba(120,190,255,.3), transparent 68%),
+            linear-gradient(180deg, #f7eaff 0%, #fde2ea 100%);
+        color: #333;
+    }
+
+    .dark body {
+        background-color: #0a0a0a;
+        background-image:
+            radial-gradient(ellipse at 20% 30%, rgba(56,189,248,.4), transparent 60%),
+            radial-gradient(ellipse at 80% 70%, rgba(139,92,246,.3), transparent 70%),
+            radial-gradient(ellipse at 60% 20%, rgba(236,72,153,.25), transparent 50%),
+            radial-gradient(ellipse at 40% 80%, rgba(34,197,94,.2), transparent 65%);
+        color: #fff;
+    }
+
+    header {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        padding: .5rem 1rem;
+        background: rgba(255,255,255,.05);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        z-index: 10;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: .5rem;
+        min-height: 3.2rem;
+    }
+
+    #page_title {
+        grid-column: 2;
+        justify-self: center;
+        width: max-content;
+        min-width: 0;
+        font-size: clamp(1rem, 3.5vw, 2.2rem);
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .countText {
+        font-size: clamp(2.5rem, 10vw, 5rem);
+        font-weight: bold;
+        background: linear-gradient(
+            45deg,
+            #0089ff,#0040ff,#b03bff,#f23bff,#ff4ad2,
+            #ff2626,#fc8c1c,#f6fc47,#6cf542,#42f566,
+            #0089ff,#0040ff,#b03bff,#f23bff,#ff4ad2,
+            #ff2626,#fc8c1c,#f6fc47,#6cf542,#42f566
+        );
+        background-size: 1500% 1500%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: bggradient 30s linear infinite;
+        user-select: none;
+        margin-bottom: .2em;
+    }
+
+    @keyframes bggradient {
+        0% { background-position: 0% 100%; }
+        100% { background-position: 83% 100%; }
+    }
+
+    .countLabel {
+        font-size: clamp(1.2rem, 5vw, 2.5rem);
+        font-weight: bold;
+        margin-bottom: .5em;
+        color: inherit;
+    }
+
+    .countSmall {
+        font-size: .65em;
+        font-weight: bold;
+        color: inherit;
+    }
+
+    .countdown {
+        font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+        font-size: clamp(2.5rem, 13vw, 7rem);
+        font-weight: bold;
+        color: inherit;
+        margin-bottom: .3em;
+        line-height: 1;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: .2em .4em;
+    }
+
+    .nowTime {
+        font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+        font-size: clamp(.9rem, 4vw, 2rem);
+        font-weight: bold;
+        color: inherit;
+        margin-top: .3em;
+        margin-bottom: 1em;
+    }
+
+    footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        padding: clamp(.8rem, 2vw, 1.2rem) 0;
+        font-size: clamp(.8rem, 2vw, 1rem);
+        color: inherit;
+        background: rgba(255,255,255,.05);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(255,255,255,.2);
+    }
+
+    footer a {
+        color: inherit;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .time-unit {
+        display: inline-flex;
+        align-items: baseline;
+        white-space: nowrap;
+    }
+
+    .countdownBlock {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        width: 100%;
+        padding: 5rem 1rem 4rem;
+    }
+
+    .headerControls {
+        grid-column: 3;
+        justify-self: end;
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        z-index: 20;
+        flex-shrink: 0;
+    }
+
+    .tzHeaderBtn {
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.18);
+        padding: .3rem .75rem;
+        border-radius: 9999px;
+        color: inherit;
+        font-size: clamp(.7rem, 1.8vw, .88rem);
+        font-weight: 600;
+        cursor: default;
+        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        max-width: 180px;
+        min-width: 0;
+        overflow: hidden;
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .tzHeaderBtn span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .light .tzHeaderBtn {
+        background: rgba(0,0,0,.05);
+        border-color: rgba(0,0,0,.1);
+    }
+
+    .headerBtnIcon {
+        font-size: 1.1rem;
+        vertical-align: middle;
+        flex-shrink: 0;
+    }
+
+    .settingsIconBtn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .settingsIconBtn i {
+        font-size: 1.8rem;
+    }
+
+    #tzPanel {
+        display: none;
+        position: fixed;
+        top: 3.8rem;
+        right: 1rem;
+
+        width: min(420px, calc(100vw - 2rem));
+        min-width: 0;
+        max-width: calc(100vw - 2rem);
+
+        background: rgba(30,30,30,.95);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        color: #fff;
+        padding: 1rem;
+        border-radius: 12px;
+        z-index: 30;
+        box-shadow: 0 4px 20px rgba(0,0,0,.4);
+
+        max-height: calc(100dvh - 5rem);
+        overflow-y: auto;
+        overflow-x: hidden;
+        text-align: left;
+
+        overflow-wrap: anywhere;
+        scrollbar-color: rgba(255,255,255,.4) transparent;
+        scrollbar-width: thin;
+    }
+
+    #tzPanel::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #tzPanel::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #tzPanel::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.4);
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background-clip: padding-box;
+    }
+
+    .panelLabel {
+        font-weight: bold;
+        display: block;
+        margin-bottom: .5rem;
+        line-height: 1.5;
+    }
+
+    .panelIcon {
+        font-size: 1.15rem;
+        vertical-align: text-bottom;
+    }
+
+    .panelDetail {
+        margin-top: .7rem;
+        font-size: .85rem;
+        line-height: 1.7;
+        opacity: .9;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .panelDivider {
+        border: none;
+        border-top: 1px solid rgba(255,255,255,.15);
+        margin: 1rem 0 .8rem;
+    }
+
+    #tzPanel select {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding: .65rem;
+        border-radius: 8px;
+        border: 1px solid #555;
+        background: #222;
+        color: #fff;
+        font-size: .9rem;
+        line-height: 1.5;
+        box-sizing: border-box;
+    }
+
+    .light #tzPanel {
+        background: rgba(255,255,255,.95) !important;
+        color: #333 !important;
+        scrollbar-color: rgba(0,0,0,.3) transparent;
+    }
+
+    .light #tzPanel::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,.3);
+    }
+
+    .light #tzPanel select {
+        background: #f5f5f5;
+        color: #333;
+        border-color: #ccc;
+    }
+
+    .light .panelDivider {
+        border-top-color: rgba(0,0,0,.12);
+    }
+
+    .newYearBlock {
+        font-size: clamp(1.5rem, 6vw, 3.5rem);
+        line-height: 1.6;
+        text-align: center;
+    }
+
+    .newYearYear {
+        font-size: clamp(2rem, 8vw, 5rem);
+    }
+
+    @media (max-width: 700px) {
+        header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            align-items: center;
+            gap: .25rem .5rem;
+            min-height: 6rem;
+        }
+
+        #page_title {
+            grid-column: 2;
+            grid-row: 1;
+            position: static;
+            transform: none;
+            max-width: calc(100vw - 5rem);
+        }
+
+        .headerControls {
+            display: contents;
+        }
+
+        #tzHeaderBtn {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            justify-self: end;
+        }
+
+        #tzSettingsBtn {
+            grid-column: 3;
+            grid-row: 1;
+            justify-self: end;
+        }
+
+        #tzPanel {
+            top: 6.25rem;
+        }
+
+        .countdownBlock {
+            padding-top: 6rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        header {
+            min-height: 5rem;
+            padding: .4rem .5rem;
+        }
+
+        #page_title {
+            font-size: clamp(.88rem, 4vw, 1.1rem);
+        }
+
+        .countdown {
+            font-size: clamp(2rem, 15vw, 4rem);
+            gap: .25em .3em;
+        }
+
+        .headerControls {
+            gap: .25rem;
+        }
+
+        .tzHeaderBtn {
+            max-width: 36vw;
+            padding: .28rem .5rem;
+            font-size: .68rem;
+        }
+
+        .tzHeaderBtn .headerBtnIcon {
+            font-size: .95rem;
+        }
+
+        .settingsIconBtn i {
+            font-size: 1.5rem;
+        }
+
+        #tzPanel {
+            top: 5.25rem;
+            right: .75rem;
+            width: calc(100vw - 1.5rem);
+            max-width: calc(100vw - 1.5rem);
+            min-width: 0;
+            padding: .9rem;
+            max-height: calc(100dvh - 5rem);
+        }
+
+        #tzPanel select {
+            font-size: 16px;
+            padding: .7rem;
+        }
+
+        .panelDetail {
+            font-size: .8rem;
+            line-height: 1.7;
+        }
+
+        .countdownBlock {
+            padding-left: .5rem;
+            padding-right: .5rem;
+        }
+    }
+
+    @media (max-width: 350px) {
+        #page_title {
+            font-size: .82rem;
+        }
+
+        .tzHeaderBtn {
+            max-width: 28vw;
+            font-size: .62rem;
+        }
+
+        .countdown {
+            font-size: 2rem;
+        }
+    }

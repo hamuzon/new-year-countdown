@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>元旦までのカウントダウン</title>
+<meta name="description" content="来年の元旦までの残り時間をリアルタイムでカウントダウン表示します。">
+
+<meta property="og:title" content="来年の元旦までのカウントダウン">
+<meta property="og:description" content="来年の元旦までの残り時間をリアルタイムでカウントダウン表示します。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="来年の元旦までのカウントダウン">
+<meta name="twitter:description" content="来年の元旦までの残り時間をリアルタイムでカウントダウン表示します。">
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<link rel="stylesheet" href="./CSS/style.css">
+    <script src="./JS/timezone-ja.js" defer></script>
+    <script src="./JS/script.js" defer></script>
+    <script src="./JS/countdown.js" defer></script>
+</head>
+
+<body>
+
+<header>
+    <h1 id="page_title"></h1>
+
+    <div class="headerControls">
+
+        <div
+            id="tzHeaderBtn"
+            class="tzHeaderBtn"
+            aria-label=""
+        >
+            <i class="material-icons headerBtnIcon">schedule</i>
+            <span id="tzHeaderName"></span>
+        </div>
+
+        <button
+            id="tzSettingsBtn"
+            title=""
+            class="settingsIconBtn"
+            aria-label=""
+            aria-expanded="false"
+            aria-controls="tzPanel"
+        >
+            <i class="material-icons">settings</i>
+        </button>
+
+    </div>
+</header>
+
+<div id="tzPanel">
+
+    <label for="tzSelect" class="panelLabel">
+        <i class="material-icons panelIcon">language</i>
+        
+    </label>
+
+    <select id="tzSelect"></select>
+
+    <div id="tzCurrentDetail" class="panelDetail">
+        
+    </div>
+
+    <hr class="panelDivider">
+
+    <label for="langSelect" class="panelLabel">
+        <i class="material-icons panelIcon">translate</i>
+        
+    </label>
+
+    <select id="langSelect">
+        <option value="ja" >
+            日本語 (Japanese)
+        </option>
+        <option value="en" >
+            English
+        </option>
+    </select>
+
+</div>
+
+<div class="countdownBlock">
+
+    <span class="countText"></span>
+
+    <span class="countLabel"></span>
+
+    <div class="countdown">
+
+        <div class="time-unit">
+            <span class="days">0</span>
+            <span class="countSmall" id="dayUnit"></span>
+        </div>
+
+        <div class="time-unit">
+            <span class="hours">00</span> :
+        </div>
+
+        <div class="time-unit">
+            <span class="minutes">00</span> :
+        </div>
+
+        <div class="time-unit">
+            <span class="seconds">00</span> .
+        </div>
+
+        <div class="time-unit">
+            <span class="milliseconds">00</span>
+        </div>
+
+    </div>
+
+    <div class="nowTime">
+
+        <span class="nowYear">0</span><span class="dateSep yearSep"></span>
+        <span class="nowMonth">0</span><span class="dateSep monthSep"></span>
+        <span class="nowDay">0</span><span class="dateSep daySep"></span>&nbsp;
+
+        <span class="nowHour">00</span> :
+        <span class="nowMinute">00</span> :
+        <span class="nowSecond">00</span>
+
+    </div>
+
+</div>
+
+<footer id="footer-copy"></footer>
+
+</body>
+</html>
